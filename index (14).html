@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1120">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<title>Diário de Treino</title>
+<style>
+:root{--bg:#0e1120;--pan:#171b30;--fld:#212743;--line:#2b3252;--txt:#eef0f8;--mut:#8b92b0;--acc:#ff7a3d;--ok:#35d9a8;--okbg:rgba(53,217,168,.13)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:"Bricolage Grotesque",ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+body{padding:env(safe-area-inset-top) 0 calc(110px + env(safe-area-inset-bottom))}
+.wrap{max-width:600px;margin:0 auto;padding:0 18px}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+.hide{display:none!important}
+textarea,input{font-family:inherit}
+textarea:focus,input:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+#setup h1{font-size:40px;line-height:1;letter-spacing:-1.8px;margin:34px 0 12px;font-weight:800}
+#setup p{color:var(--mut);line-height:1.5;margin:0 0 20px}
+textarea{width:100%;min-height:320px;background:var(--pan);color:var(--txt);border:1px solid var(--line);border-radius:18px;padding:16px;font:16px/1.55 ui-monospace,Menlo,monospace;resize:vertical}
+.cta{display:block;width:100%;margin-top:14px;padding:17px;border-radius:16px;background:var(--acc);color:#2a0f00;font-weight:800;font-size:17px}
+.cta:active{opacity:.8}
+.sm{margin-top:10px;padding:13px;border-radius:12px;background:var(--acc);color:#2a0f00;font-weight:700;font-size:15px}
+#err,#merr{color:#ff8f8f;font-size:14px;margin-top:12px;line-height:1.4}
+
+.top{display:flex;justify-content:space-between;align-items:flex-end;padding:22px 0 0}
+.top h1{margin:0;font-size:48px;line-height:.95;letter-spacing:-2.4px;font-weight:800}
+.top p{margin:8px 0 0;color:var(--mut);font-size:14px;line-height:1.35;max-width:36ch}
+.ghost{color:var(--mut);font-size:14px;padding:8px 0}
+.week{display:flex;gap:22px;overflow-x:auto;margin-top:18px;border-bottom:1px solid var(--line);scrollbar-width:none}
+.week::-webkit-scrollbar{display:none}
+.wd{flex:0 0 auto;padding:12px 0 11px;font-size:16px;font-weight:600;color:var(--mut);border-bottom:3px solid transparent;margin-bottom:-1px}
+.wd.on{color:var(--txt);border-color:var(--acc)}
+.wd.fin::after{content:"";display:inline-block;width:6px;height:6px;margin-left:7px;border-radius:50%;background:var(--ok);vertical-align:middle}
+
+.hud{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:22px}
+.big b{font-size:44px;line-height:1;letter-spacing:-2px;font-weight:800;font-variant-numeric:tabular-nums}
+.big span{margin-left:6px;color:var(--mut);font-size:14px}
+.side{display:flex;gap:22px;text-align:right}
+.side small{display:block;font-size:12px;color:var(--mut)}
+.side b{font-size:18px;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.pb{height:6px;border-radius:3px;background:var(--line);margin:14px 0 4px;overflow:hidden}
+.pb i{display:block;height:100%;width:0;background:var(--acc);border-radius:3px;transition:width .3s}
+
+.mus{margin-top:22px;background:var(--pan);border-radius:20px;padding:14px}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.mh b{font-size:16px}
+.mh span{color:var(--mut);font-size:13px}
+.mus p{margin:0 0 10px;color:var(--mut);font-size:13px;line-height:1.45}
+.mrow{display:flex;gap:8px}
+.mrow input{flex:1;min-width:0;height:46px;border:0;border-radius:12px;background:var(--fld);color:var(--txt);padding:0 12px;font-size:16px}
+.mrow button{padding:0 16px;border-radius:12px;background:var(--acc);color:#2a0f00;font-weight:700}
+.mrow button.g{background:var(--fld);color:var(--txt)}
+iframe{display:block;width:100%;height:152px;border:0;border-radius:14px;background:#000}
+.macts{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+.macts button{color:var(--mut);font-size:13px;padding:6px 0}
+
+.list{margin-top:26px}
+.ex{display:grid;grid-template-columns:34px 1fr;column-gap:14px;position:relative;padding-bottom:30px}
+.ex::before{content:"";position:absolute;left:16px;top:38px;bottom:4px;width:2px;background:var(--line)}
+.ex:last-child::before{display:none}
+.node{position:relative;z-index:1;width:34px;height:34px;border-radius:50%;border:2px solid var(--line);background:var(--bg);display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--mut)}
+.ex.ok .node{background:var(--ok);border-color:var(--ok);color:#04291f}
+.eh h3{margin:2px 0 2px;font-size:19px;line-height:1.2;letter-spacing:-.4px}
+.eh span{color:var(--mut);font-size:13px}
+.cols,.row{display:grid;grid-template-columns:24px 1fr 1fr 46px;gap:8px;align-items:center}
+.cols{margin-top:12px;padding:0 8px;color:var(--mut);font-size:12px;text-align:center}
+.row{padding:5px 8px;margin:0 -8px;border-radius:16px;transition:background .18s}
+.row.done{background:var(--okbg)}
+.n{text-align:center;font-weight:700;color:var(--mut)}
+.row.done .n{color:var(--ok)}
+.row input{width:100%;height:46px;border:0;border-radius:12px;background:var(--fld);color:var(--txt);text-align:center;font-size:17px;font-weight:600}
+.row input::placeholder{color:#576089;font-weight:500}
+.row.done input{background:rgba(53,217,168,.1);color:var(--ok)}
+.chk{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);color:var(--mut);font-size:20px;font-weight:800;transition:.15s}
+.chk.on{background:var(--ok);border-color:var(--ok);color:#04291f}
+.add{margin-top:6px;padding:10px 0;color:var(--acc);font-weight:700;font-size:15px}
+.foot{padding:6px 0 20px;text-align:center}
+
+.rest{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:20;max-width:576px;margin:0 auto;background:#1c2140;border:1px solid var(--line);border-radius:26px;padding:10px 12px 12px;box-shadow:0 12px 32px rgba(0,0,0,.5);overflow:hidden}
+.in{display:flex;align-items:center;gap:6px}
+.t{flex:1;padding-left:8px;font-size:30px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1}
+.t small{display:block;margin-bottom:4px;font-size:12px;font-weight:500;letter-spacing:0;color:var(--mut)}
+.rb{min-width:42px;height:44px;padding:0 8px;border-radius:14px;background:var(--fld);font-weight:600;font-size:14px}
+.rb.p{background:var(--acc);color:#2a0f00;font-weight:800;padding:0 14px}
+.trk{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--line)}
+.trk i{display:block;height:100%;width:0;background:var(--acc);transition:width .25s linear}
+.rest.end{background:var(--ok);border-color:var(--ok)}
+.rest.end .t,.rest.end .t small{color:#04291f}
+
+/* iPhone visual refresh */
+.brandrow{display:flex;align-items:center;gap:7px;color:var(--mut);font-size:10px;font-weight:800;letter-spacing:1.5px;margin-bottom:8px}
+.branddot{width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px rgba(255,122,61,.55)}
+.topright{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.clock{font-variant-numeric:tabular-nums;font-size:13px;font-weight:800;background:var(--fld);padding:7px 10px;border-radius:10px;white-space:nowrap}
+.top{padding-top:18px}.top h1{font-size:43px}
+.mus{border:1px solid rgba(255,255,255,.04);box-shadow:0 8px 24px rgba(0,0,0,.14)}
+@media(max-width:390px){.top h1{font-size:38px}.side{gap:12px}.big b{font-size:38px}.wrap{padding:0 14px}.rest{left:8px;right:8px}}
+</style>
+</head>
+<body>
+<section id="setup" class="wrap">
+  <h1>Monte seu diário de treino</h1>
+  <p>Cole sua rotina. Cada dia vira uma aba e cada exercício ganha as séries indicadas.</p>
+  <textarea id="src" spellcheck="false" autocapitalize="off" autocorrect="off">SEGUNDA — PEITO, OMBRO, TRÍCEPS E ABDÔMEN
+• Supino Inclinado com Halteres — 3x10-12
+• Supino Reto — 3x10-12
+• Desenvolvimento — 3x10-12
+• Elevação Lateral com Halteres — 3x10-12
+• Tríceps Polia — 3x10-12
+• Tríceps Francês — 3x10-12
+• Abdominal — 3x10-12
+• Prancha — 5x1 min
+
+QUARTA — PERNAS E PESCOÇO
+• Agachamento Livre — 3x10-12
+• Leg 45 — 3x10-12
+• Cadeira Extensora — 3x10-12
+• Mesa Flexora ou Stiff (Posterior) — 3x10-12
+• Gêmeos em Pé (Panturrilha) — 3x10-12
+• Flexão de Pescoço — 4x10
+
+SEXTA — COSTAS E BÍCEPS
+• Barra Fixa — 3x10-12
+• Levantamento Reeves ou Terra — 3x10-12
+• Puxada Aberta Baixa — 3x10-12
+• Remada em Pé (Alta) — 3x10-12
+• Rosca Martelo — 3x10-12
+• Rosca Scott — 3x10-12</textarea>
+  <button class="cta" id="gen" type="button" onclick="generateWorkout()">Gerar Meu Diário de Treino</button>
+  <noscript><div id="js-status" style="font-size:12px;opacity:.65;margin:8px 0">JavaScript carregado ✓</div>
+    <div id="err" style="color:#ff8f8f;font-size:14px;margin-top:12px;line-height:1.4">Este arquivo precisa de JavaScript. No iPhone, abra o HTML em um app/navegador que execute JavaScript; a prévia do app Arquivos pode não executar scripts.</div></noscript>
+  <div id="err"></div>
+</section>
+
+<section id="app" class="hide">
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <div class="brandrow"><span class="branddot"></span><span>DIÁRIO DE TREINO</span></div>
+        <h1 id="ttl"></h1><p id="sub"></p>
+      </div>
+      <div class="topright">
+        <div class="clock" id="clock">00:00</div>
+        <button class="ghost" id="reset" type="button">Redefinir</button>
+      </div>
+    </div>
+    <nav class="week" id="week"></nav>
+
+    <div class="hud">
+      <div class="big"><b id="s3">0/0</b><span>séries</span></div>
+      <div class="side">
+        <div><small>Tempo</small><b id="s1">0:00</b></div>
+        <div><small>Volume</small><b id="s2">0 kg</b></div>
+      </div>
+    </div>
+    <div class="pb"><i id="pb"></i></div>
+
+    <section class="mus">
+      <div class="mh"><b>Spotify</b><span id="spotifyState">Não conectado</span></div>
+       <div id="spotifyConnect">
+         <p>Conecte sua conta para mostrar a música que está tocando no Spotify.</p>
+         <div class="mrow">
+           <button id="spotifyLogin" type="button" style="width:100%;height:46px;border-radius:12px;background:var(--acc);color:#2a0f00;font-weight:800">Conectar minha conta Spotify</button>
+         </div>
+         <div id="spotifyNow" class="hide" style="margin-top:12px;padding:12px;border-radius:14px;background:var(--fld)">
+           <div style="display:flex;gap:12px;align-items:center">
+             <img id="spotifyArt" alt="" style="width:54px;height:54px;border-radius:9px;object-fit:cover;background:#171b30">
+             <div style="min-width:0">
+               <div id="spotifyTrack" style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Nada tocando</div>
+               <div id="spotifyArtist" style="color:var(--mut);font-size:13px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+             </div>
+           </div>
+           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+             <span id="spotifyProgress" style="color:var(--mut);font-size:12px">—</span>
+             <button id="spotifyRefresh" type="button" class="g" style="padding:6px 0;color:var(--mut)">Atualizar</button>
+           </div>
+         </div>
+         <div id="spotifyHelp" style="color:var(--mut);font-size:12px;line-height:1.4;margin-top:9px">
+           A conexão usa a autorização oficial do Spotify (OAuth/PKCE).
+         </div>
+         <div id="merr"></div>
+       </div>
+       <div id="mform" class="hide"></div>
+       <div id="mplay" class="hide">
+        <iframe id="mfr" title="Player do Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        <div class="macts">
+          <button id="mchg" type="button">Trocar</button>
+          <button id="mall" type="button">Usar em todos os dias</button>
+          <button id="mrm" type="button">Remover</button>
+        </div>
+      </div>
+    </section>
+
+    <main class="list" id="main"></main>
+    <div class="foot"><button class="ghost" id="clr" type="button">Zerar checks do dia</button></div>
+  </div>
+
+  <div class="rest" id="rest">
+    <div class="in">
+      <div class="t"><small id="rl">Descanso</small><span id="rt">01:30</span></div>
+      <button class="rb" id="m15" type="button">−15</button>
+      <button class="rb" id="p15" type="button">+15</button>
+      <button class="rb p" id="pp" type="button">Iniciar</button>
+      <button class="rb" id="sk" type="button" aria-label="Pular descanso">✕</button>
+    </div>
+    <div class="trk"><i id="tb"></i></div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+var KEY="diario-treino-v4",REST=90,editing=false;
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){return false}}
+var S=load();
+if(S&&(!S.days||!Array.isArray(S.days)))S=null;
+var T={left:REST,total:REST,run:false,end:0,iv:null};
+function day(){return S.days[S.active]}
+
+function parse(raw){
+  var text=String(raw).normalize("NFC").replace(/[\u00a0\u2007\u202f]/g," ").replace(/[\u2028\u2029\u0085]/g,"\n");
+  var dayRe=/^\s*(segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo)(?:-feira)?(?![a-zà-ú])\s*[—–―\-:|]*\s*(.*)$/i;
+  var exRe=/^(.+?)\s*[—–―\-:|]?\s*(\d+)\s*[xX×]\s*(.+)$/;
+  var days=[],cur=null;
+  text.split(/\r\n|\r|\n/).forEach(function(line){
+    var l=line.trim();if(!l)return;
+    var d=l.match(dayRe);
+    if(d){var nm=d[1].toLowerCase();cur={name:nm.charAt(0).toUpperCase()+nm.slice(1),title:d[2].trim(),exercises:[],start:0,music:null};days.push(cur);return}
+    if(!cur)return;
+    var e=l.replace(/^[\s•·▪●◦‣*\-–—]+/,"").match(exRe);
+    if(!e)return;
+    var name=e[1].replace(/[\s—–―\-:|]+$/,"").trim();
+    var n=Math.min(parseInt(e[2],10),20),goal=e[3].trim();
+    if(!name||!n)return;
+    var sets=[];for(var i=0;i<n;i++)sets.push({kg:"",reps:"",done:false});
+    cur.exercises.push({name:name,goal:goal,target:n+"x"+goal,sets:sets});
+  });
+  return days.filter(function(d){return d.exercises.length});
+}
+
+function show(){
+  var has=S&&S.days&&S.days.length;
+  $("setup").classList.toggle("hide",!!has);
+  $("app").classList.toggle("hide",!has);
+  if(has){renderWeek();renderDay();fmt()}
+}
+
+function allDone(ex){return ex.sets.length>0&&ex.sets.every(function(s){return s.done})}
+function dayDone(d){return d.exercises.length>0&&d.exercises.every(allDone)}
+function renderWeek(){
+  $("week").innerHTML=S.days.map(function(d,i){
+    return '<button type="button" class="wd'+(i===S.active?' on':'')+(dayDone(d)?' fin':'')+'" data-i="'+i+'">'+esc(d.name.slice(0,3))+'</button>';
+  }).join("");
+}
+
+function renderDay(){
+  var d=day();
+  $("ttl").textContent=d.name;
+  $("sub").textContent=d.title||"";
+  var h="";
+  d.exercises.forEach(function(ex,ei){
+    var ok=allDone(ex);
+    h+='<section class="ex'+(ok?' ok':'')+'" data-e="'+ei+'"><div class="node">'+(ok?'✓':(ei+1))+'</div><div>'
+      +'<div class="eh"><h3>'+esc(ex.name)+'</h3><span>Meta: '+esc(ex.target)+'</span></div>'
+      +'<div class="cols"><span>#</span><span>Kg</span><span>Reps</span><span></span></div>';
+    ex.sets.forEach(function(s,si){
+      h+='<div class="row'+(s.done?' done':'')+'" data-e="'+ei+'" data-s="'+si+'"><span class="n">'+(si+1)+'</span>'
+        +'<input inputmode="decimal" placeholder="0" data-f="kg" value="'+esc(s.kg)+'" aria-label="Carga em kg">'
+        +'<input type="text" inputmode="numeric" placeholder="'+esc(ex.goal)+'" data-f="reps" value="'+esc(s.reps)+'" aria-label="Repetições">'
+        +'<button type="button" class="chk'+(s.done?' on':'')+'" aria-label="Concluir série">✓</button></div>';
+    });
+    h+='<button type="button" class="add" data-e="'+ei+'">+ Adicionar série</button></div></section>';
+  });
+  $("main").innerHTML=h;
+  stats();renderMusic();
+}
+
+function clock(sec){sec=Math.max(0,Math.floor(sec));var m=Math.floor(sec/60),s=sec%60;return m+":"+(s<10?"0":"")+s}
+function stats(){
+  var d=day(),t=0,k=0,v=0;
+  d.exercises.forEach(function(e){e.sets.forEach(function(s){
+    t++;
+    if(s.done){k++;var kg=parseFloat(String(s.kg).replace(",",".")),r=parseInt(s.reps,10);if(kg>0&&r>0)v+=kg*r}
+  })});
+  $("s2").textContent=Math.round(v).toLocaleString("pt-BR")+" kg";
+  $("s3").textContent=k+"/"+t;
+  $("pb").style.width=(t?k/t*100:0)+"%";
+  $("s1").textContent=d.start?clock((Date.now()-d.start)/1000):"0:00";
+  var w=$("week").children[S.active];if(w)w.classList.toggle("fin",dayDone(d));
+}
+setInterval(function(){if(S&&S.days&&!$("app").classList.contains("hide")){var d=day();$("s1").textContent=d.start?clock((Date.now()-d.start)/1000):"0:00"}},1000);
+
+function spot(u){
+  u=String(u||"").trim();
+  var m=u.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(playlist|album|track|artist|episode|show)\/([A-Za-z0-9]+)/i)||u.match(/^spotify:(playlist|album|track|artist|episode|show):([A-Za-z0-9]+)/i);
+  return m?{t:m[1].toLowerCase(),id:m[2]}:null;
+}
+function renderMusic(){
+  var d=day(),f=$("mfr"),m=d.music;
+  var showPlayer=!!m&&!editing;
+  $("mplay").classList.toggle("hide",!showPlayer);
+  $("mform").classList.toggle("hide",showPlayer);
+  $("mcx").classList.toggle("hide",!m);
+  if(m){
+    var src="https://open.spotify.com/embed/"+m.t+"/"+m.id+"?utm_source=generator&theme=0";
+    if(f.getAttribute("src")!==src)f.setAttribute("src",src);
+  }else if(f.getAttribute("src")){f.removeAttribute("src")}
+}
+/* Spotify OAuth/PKCE */
+var SPOTIFY_CLIENT_ID="";
+var SPOTIFY_REDIRECT_URI=location.origin+location.pathname;
+
+function b64url(buf){return btoa(String.fromCharCode.apply(null,new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+function rand(n){var a=new Uint8Array(n);crypto.getRandomValues(a);return b64url(a)}
+async function sha256(s){return crypto.subtle.digest("SHA-256",new TextEncoder().encode(s))}
+function spotifyToken(){return localStorage.getItem("spotify_access_token")}
+function spotifyState(){ $("spotifyState").textContent=spotifyToken()?"Conectado":"Não conectado" }
+
+async function spotifyLogin(){
+  if(!SPOTIFY_CLIENT_ID){$("merr").textContent="Configure o Client ID do Spotify neste arquivo antes de conectar.";return}
+  var verifier=rand(64),challenge=b64url(await sha256(verifier));
+  localStorage.setItem("spotify_verifier",verifier);
+  var u=new URL("https://accounts.spotify.com/authorize");
+  u.searchParams.set("client_id",SPOTIFY_CLIENT_ID);u.searchParams.set("response_type","code");
+  u.searchParams.set("redirect_uri",SPOTIFY_REDIRECT_URI);
+  u.searchParams.set("scope","user-read-currently-playing user-read-playback-state");
+  u.searchParams.set("code_challenge_method","S256");u.searchParams.set("code_challenge",challenge);
+  location.href=u;
+}
+async function spotifyCallback(){
+  var code=new URLSearchParams(location.search).get("code");if(!code||!SPOTIFY_CLIENT_ID)return;
+  var verifier=localStorage.getItem("spotify_verifier");if(!verifier)return;
+  var body=new URLSearchParams({client_id:SPOTIFY_CLIENT_ID,grant_type:"authorization_code",code:code,redirect_uri:SPOTIFY_REDIRECT_URI,code_verifier:verifier});
+  var r=await fetch("https://accounts.spotify.com/api/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:body});
+  var j=await r.json();
+  if(j.access_token){localStorage.setItem("spotify_access_token",j.access_token);history.replaceState({},document.title,location.pathname);spotifyState();spotifyNowPlaying()}
+}
+async function spotifyNowPlaying(){
+  var tok=spotifyToken();if(!tok)return;
+  try{
+    var r=await fetch("https://api.spotify.com/v1/me/player",{headers:{Authorization:"Bearer "+tok}});
+    if(r.status===401){localStorage.removeItem("spotify_access_token");spotifyState();return}
+    $("spotifyNow").classList.remove("hide");
+    if(r.status===204){$("spotifyTrack").textContent="Nada tocando agora";$("spotifyArtist").textContent="";$("spotifyProgress").textContent="—";return}
+    var j=await r.json(),item=j.item;
+    if(!item){$("spotifyTrack").textContent="Nada tocando agora";$("spotifyArtist").textContent="";return}
+    $("spotifyTrack").textContent=item.name||"";
+    $("spotifyArtist").textContent=(item.artists||[]).map(function(a){return a.name}).join(", ");
+    if(item.album&&item.album.images&&item.album.images[0])$("spotifyArt").src=item.album.images[0].url;
+    var pos=Math.floor((j.progress_ms||0)/1000),dur=Math.floor((item.duration_ms||0)/1000);
+    $("spotifyProgress").textContent=clock(pos)+" / "+clock(dur);
+  }catch(e){$("merr").textContent="Não consegui consultar o Spotify agora."}
+}
+$("spotifyLogin").addEventListener("click",spotifyLogin);
+$("spotifyRefresh").addEventListener("click",spotifyNowPlaying);
+setInterval(function(){if(spotifyToken())spotifyNowPlaying()},15000);
+spotifyState();spotifyCallback();
+
+$("week").addEventListener("click",function(e){
+  var b=e.target.closest(".wd");if(!b)return;
+  S.active=+b.dataset.i;editing=false;save();renderWeek();renderDay();
+});
+
+$("main").addEventListener("input",function(e){
+  var i=e.target,r=i.closest(".row");if(!r||!i.dataset.f)return;
+  day().exercises[r.dataset.e].sets[r.dataset.s][i.dataset.f]=i.value;save();stats();
+});
+
+$("main").addEventListener("click",function(e){
+  var a=e.target.closest(".add");
+  if(a){day().exercises[a.dataset.e].sets.push({kg:"",reps:"",done:false});save();renderDay();return}
+  var b=e.target.closest(".chk");if(!b)return;
+  var r=b.closest(".row"),d=day(),ex=d.exercises[r.dataset.e],s=ex.sets[r.dataset.s];
+  s.done=!s.done;
+  if(s.done){
+    if(!d.start)d.start=Date.now();
+    if(!s.reps){var m=String(ex.goal).match(/^\d+/);if(m&&ex.goal.indexOf("min")<0){s.reps=m[0];r.querySelector('[data-f="reps"]').value=s.reps}}
+    startRest();
+  }
+  r.classList.toggle("done",s.done);b.classList.toggle("on",s.done);
+  var sec=r.closest(".ex"),ok=allDone(ex);
+  sec.classList.toggle("ok",ok);sec.querySelector(".node").textContent=ok?"✓":(+r.dataset.e+1);
+  save();stats();
+});
+
+$("clr").addEventListener("click",function(){
+  if(!confirm("Zerar os checks deste dia? As cargas serão mantidas."))return;
+  var d=day();d.start=0;d.exercises.forEach(function(e){e.sets.forEach(function(s){s.done=false})});
+  save();renderDay();renderWeek();
+});
+
+$("reset").addEventListener("click",function(){
+  if(!confirm("Apagar treino, cargas, checks e músicas salvos?"))return;
+  try{localStorage.removeItem(KEY)}catch(e){}
+  S=null;halt();T.left=REST;$("mfr").removeAttribute("src");show();
+});
+
+function updateClock(){
+  var d=new Date(),hh=String(d.getHours()).padStart(2,"0"),mm=String(d.getMinutes()).padStart(2,"0");
+  $("clock").textContent=hh+":"+mm;
+}
+setInterval(updateClock,1000);updateClock();
+
+function fmt(){
+  var s=Math.max(0,Math.ceil(T.left));
+  $("rt").textContent=("0"+Math.floor(s/60)).slice(-2)+":"+("0"+s%60).slice(-2);
+  $("pp").textContent=T.run?"Pausar":"Iniciar";
+  $("tb").style.width=(T.total>0?(1-T.left/T.total)*100:0)+"%";
+}
+function tick(){
+  T.left=(T.end-Date.now())/1000;
+  if(T.left<=0){T.left=0;halt();finish()}
+  fmt();
+}
+function go(){
+  if(T.left<=0)T.left=REST;
+  if(T.left>T.total)T.total=T.left;
+  T.run=true;T.end=Date.now()+T.left*1000;
+  clearInterval(T.iv);T.iv=setInterval(tick,200);
+  $("rest").classList.remove("end");$("rl").textContent="Descansando";fmt();
+}
+function halt(){T.run=false;clearInterval(T.iv);fmt()}
+function startRest(){T.left=REST;T.total=REST;go()}
+function idle(){halt();T.left=REST;T.total=REST;$("rest").classList.remove("end");$("rl").textContent="Descanso";fmt()}
+function finish(){
+  $("rest").classList.add("end");$("rl").textContent="Pronto!";
+  beep();if(navigator.vibrate)navigator.vibrate([200,100,200]);
+  setTimeout(function(){if(!T.run)idle()},4000);
+}
+function beep(){
+  try{
+    var C=window.AudioContext||window.webkitAudioContext,c=new C();
+    [0,.25].forEach(function(t){
+      var o=c.createOscillator(),g=c.createGain();
+      o.frequency.value=880;o.connect(g);g.connect(c.destination);
+      g.gain.setValueAtTime(.0001,c.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(.2,c.currentTime+t+.02);
+      g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+t+.2);
+      o.start(c.currentTime+t);o.stop(c.currentTime+t+.22);
+    });
+  }catch(e){}
+}
+function adjust(n){
+  T.left=Math.max(5,T.left+n);T.total=Math.max(T.total,T.left);
+  if(T.run)T.end=Date.now()+T.left*1000;fmt();
+}
+$("pp").addEventListener("click",function(){T.run?halt():go()});
+$("m15").addEventListener("click",function(){adjust(-15)});
+$("p15").addEventListener("click",function(){adjust(15)});
+$("sk").addEventListener("click",idle);
+
+show();
+})();
+</script>
+</body>
+</html>
+
+<script>
+(function(){
+  try {
+    var b=document.getElementById("gen");
+    if(b && typeof window.generateWorkout==="function"){
+      b.onclick=window.generateWorkout;
+    }
+  } catch(e) {}
+})();
+</script>
